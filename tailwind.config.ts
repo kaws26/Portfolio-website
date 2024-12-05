@@ -3,12 +3,12 @@ import plugin from "tailwindcss/plugin";
 import animatePlugin from "tailwindcss-animate";
 
 // Define the addVariablesForColors plugin
-const addVariablesForColors = plugin(function ({ addBase, theme }) {
+const addVariablesForColors = plugin(function ({ addBase, theme }: { addBase: Function, theme: Function }) {
   const colors = theme("colors");
 
   // Flatten colors (handles nested colors objects)
-  const flattenColors = (colors: Record<string, any>, prefix = ""): Record<string, string> =>
-    Object.entries(colors).reduce((acc, [key, value]) => {
+  const flattenColors = (colors: Record<string, any>, prefix: string = ""): Record<string, string> => {
+    return Object.entries(colors).reduce((acc, [key, value]) => {
       if (typeof value === "object" && value !== null) {
         // If value is an object, recursively flatten
         Object.assign(acc, flattenColors(value, `${prefix}${key}-`));
@@ -17,7 +17,8 @@ const addVariablesForColors = plugin(function ({ addBase, theme }) {
         acc[`${prefix}${key}`] = value;
       }
       return acc;
-    }, {});
+    }, {} as Record<string, string>);
+  };
 
   // Flatten all colors from the theme
   const flattenedColors = flattenColors(colors);
