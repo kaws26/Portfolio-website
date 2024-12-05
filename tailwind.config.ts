@@ -1,22 +1,40 @@
 import type { Config } from "tailwindcss";
-import plugin from "tailwindcss/plugin"; // For adding custom plugins
-import animatePlugin from "tailwindcss-animate"; // Ensure this is installed
-import {flattenColorPalette} from "tailwindcss/lib/util/flattenColorPalette";
+import plugin from "tailwindcss/plugin";
+import animatePlugin from "tailwindcss-animate";
 
 // Define the addVariablesForColors plugin
 const addVariablesForColors = plugin(function ({ addBase, theme }) {
-  const allColors = flattenColorPalette(theme("colors"));
-  const newVars = Object.fromEntries(
-    Object.entries(allColors).map(([key, val]) => [`--${key}`, val])
+  const colors = theme("colors");
+
+  // Flatten colors (handles nested colors objects)
+  const flattenColors = (colors: Record<string, any>, prefix = ""): Record<string, string> =>
+    Object.entries(colors).reduce((acc, [key, value]) => {
+      if (typeof value === "object" && value !== null) {
+        // If value is an object, recursively flatten
+        Object.assign(acc, flattenColors(value, `${prefix}${key}-`));
+      } else {
+        // Otherwise, it's a color value
+        acc[`${prefix}${key}`] = value;
+      }
+      return acc;
+    }, {});
+
+  // Flatten all colors from the theme
+  const flattenedColors = flattenColors(colors);
+
+  // Convert to CSS variables
+  const cssVariables = Object.fromEntries(
+    Object.entries(flattenedColors).map(([key, val]) => [`--${key}`, val])
   );
 
+  // Add the CSS variables to :root
   addBase({
-    ":root": newVars,
+    ":root": cssVariables,
   });
 });
 
-export default {
-  darkMode: ["class"],
+const config: Config = {
+  darkMode: ["class"], // Enable dark mode via class
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -30,10 +48,6 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
         },
         primary: {
           DEFAULT: "hsl(var(--primary))",
@@ -73,5 +87,7 @@ export default {
       },
     },
   },
-  plugins: [animatePlugin, addVariablesForColors],
-} satisfies Config;
+  plugins: [animatePlugin, addVariablesForColors], // Add the plugin for color variables
+};
+
+export default config;
